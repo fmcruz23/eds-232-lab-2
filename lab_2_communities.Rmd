@@ -1,0 +1,223 @@
+---
+title: "lab_2_communities"
+author: "Felicia Cruz"
+date: "1/26/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Lab 2a. Community - Cluster
+
+## K-Means Clustering
+
+Load and plot the iris dataset
+```{r}
+# load R packages
+librarian::shelf(
+  dplyr, DT, ggplot2, tibble)
+```
+
+```{r}
+# set seed for reproducible results
+set.seed(42)
+
+# load the dataset
+data("iris")
+
+# look at documentation in RStudio
+if (interactive())
+  help(iris)
+
+# show data table
+datatable(iris)
+```
+
+```{r}
+# plot petal length vs width, species naive
+ggplot(
+  iris, aes(Petal.Length, Petal.Width)) +
+  geom_point()
+```
+
+```{r}
+# plot petal length vs width, color by species
+legend_pos <- theme(
+    legend.position = c(0.95, 0.05),
+    legend.justification = c("right", "bottom"),
+    legend.box.just = "right")
+ggplot(
+  iris, aes(Petal.Length, Petal.Width, color = Species)) +
+  geom_point() +
+  legend_pos
+```
+
+Cluster iris using kmeans()
+```{r}
+# cluster using kmeans
+k <- 3  # number of clusters
+iris_k <- kmeans(
+  iris %>% 
+    select(Petal.Length, Petal.Width), 
+  centers = k)
+
+# show cluster result
+iris_k
+```
+```{r}
+# compare clusters with species (which were not used to cluster)
+table(iris_k$cluster, iris$Species)
+```
+Question: How many observations could be considered “misclassified” if expecting petal length and width to differentiate between species?
+
+**6 observations would be considered misclassified if we expected petal length and width to differentiate between species.**
+
+```{r}
+# extract cluster assignment per observation
+Cluster = factor(iris_k$cluster)
+
+ggplot(iris, aes(Petal.Length, Petal.Width, color = Cluster)) +
+  geom_point() + 
+  legend_pos
+```
+
+##Plot Voronoi diagram of clustered iris
+
+```{r}
+librarian::shelf(ggvoronoi, scales)
+```
+
+```{r}
+# define bounding box for geom_voronoi()
+box <- tribble(
+  ~Petal.Length, ~Petal.Width, ~group,
+  1, 0.1, 1,
+  1, 2.5, 1,
+  7, 2.5, 1,
+  7, 0.1, 1,
+  1, 0.1, 1) %>% 
+  data.frame()
+
+# cluster using kmeans
+k <- 3  # number of clusters
+iris_k <- kmeans(
+  iris %>% 
+    select(Petal.Length, Petal.Width), 
+  centers = k)
+
+# extract cluster assignment per observation
+Cluster = factor(iris_k$cluster)
+
+# extract cluster centers
+ctrs <- as.data.frame(iris_k$centers) %>% 
+  mutate(
+    Cluster = factor(1:k))
+
+# plot points with voronoi diagram showing nearest centroid
+ggplot(iris, aes(Petal.Length, Petal.Width, color = Cluster)) +
+  geom_point() + 
+  legend_pos +
+  geom_voronoi(
+    data = ctrs, aes(fill=Cluster), color = NA, alpha=0.5, outline = box) + 
+  geom_point(
+    data = ctrs, pch=23, cex=2, fill="black")
+```
+Task: Show the Voronoi diagram for fewer (k=2) and more (k=8) clusters to see how assignment to cluster centroids work.
+
+k=2 
+```{r}
+# define bounding box for geom_voronoi()
+box <- tribble(
+  ~Petal.Length, ~Petal.Width, ~group,
+  1, 0.1, 1,
+  1, 2.5, 1,
+  7, 2.5, 1,
+  7, 0.1, 1,
+  1, 0.1, 1) %>% 
+  data.frame()
+
+# cluster using kmeans
+k <- 2  # number of clusters
+iris_k <- kmeans(
+  iris %>% 
+    select(Petal.Length, Petal.Width), 
+  centers = k)
+
+# extract cluster assignment per observation
+Cluster = factor(iris_k$cluster)
+
+# extract cluster centers
+ctrs <- as.data.frame(iris_k$centers) %>% 
+  mutate(
+    Cluster = factor(1:k))
+
+# plot points with voronoi diagram showing nearest centroid
+ggplot(iris, aes(Petal.Length, Petal.Width, color = Cluster)) +
+  geom_point() + 
+  legend_pos +
+  geom_voronoi(
+    data = ctrs, aes(fill=Cluster), color = NA, alpha=0.5, outline = box) + 
+  geom_point(
+    data = ctrs, pch=23, cex=2, fill="black")
+```
+
+k=8
+```{r}
+# define bounding box for geom_voronoi()
+box <- tribble(
+  ~Petal.Length, ~Petal.Width, ~group,
+  1, 0.1, 1,
+  1, 2.5, 1,
+  7, 2.5, 1,
+  7, 0.1, 1,
+  1, 0.1, 1) %>% 
+  data.frame()
+
+# cluster using kmeans
+k <- 8  # number of clusters
+iris_k <- kmeans(
+  iris %>% 
+    select(Petal.Length, Petal.Width), 
+  centers = k)
+
+# extract cluster assignment per observation
+Cluster = factor(iris_k$cluster)
+
+# extract cluster centers
+ctrs <- as.data.frame(iris_k$centers) %>% 
+  mutate(
+    Cluster = factor(1:k))
+
+# plot points with voronoi diagram showing nearest centroid
+ggplot(iris, aes(Petal.Length, Petal.Width, color = Cluster)) +
+  geom_point() + 
+  legend_pos +
+  geom_voronoi(
+    data = ctrs, aes(fill=Cluster), color = NA, alpha=0.5, outline = box) + 
+  geom_point(
+    data = ctrs, pch=23, cex=2, fill="black")
+```
+## Hierarchical Clustering
+
+Load dune dataset
+```{r}
+librarian::shelf(
+  cluster, vegan)
+```
+
+```{r}
+# load dune dataset from package vegan
+data("dune")
+
+# show documentation on dataset if interactive
+if (interactive())
+  help(dune)
+```
+
+Question: What are the rows and columns composed of in the dune data frame?
+
+
+
+
